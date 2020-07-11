@@ -7,30 +7,34 @@ export interface IProducer {
   send(key: any, value: Buffer, topic?: string): IProducer
 }
 
-export interface IKafkaConfig {
-  BOOTSTRAP_SERVERS_HOST: string;
-  BOOTSTRAP_SERVERS_PORT: string;
-}
+export interface IProducerConfig {
+  BOOTSTRAP_SERVERS: string;
 
-export interface IProducerConfig extends IKafkaConfig {
   toRDKafka(): object
 }
 
 export class ProducerConfig implements IProducerConfig {
-  public BOOTSTRAP_SERVERS_HOST: string;
-  public BOOTSTRAP_SERVERS_PORT: string;
+  public BOOTSTRAP_SERVERS: string;
 
-  constructor(host: string, port: string) {
-    this.BOOTSTRAP_SERVERS_HOST = host;
-    this.BOOTSTRAP_SERVERS_PORT = port;
+  constructor(host: string, port: string)
+  constructor(bootstrapServers: string | string[])
+  constructor(hostOrBootstrapServers: string | string[], port?: string) {
+    if (port) {
+        this.BOOTSTRAP_SERVERS = `${hostOrBootstrapServers}:${port}`;
+    } else if (Array.isArray(hostOrBootstrapServers)) {
+        this.BOOTSTRAP_SERVERS = hostOrBootstrapServers.join(',');
+    } else {
+        this.BOOTSTRAP_SERVERS = hostOrBootstrapServers;
+    }
   }
 
   toRDKafka(): object {
     return {
-      "metadata.broker.list": this.BOOTSTRAP_SERVERS_HOST + ":" + this.BOOTSTRAP_SERVERS_PORT
-    }
+        "bootstrap.servers": this.BOOTSTRAP_SERVERS
+    };
   }
 }
+
 
 export interface IProducerConstructor {//rdkafka.Producer presumably
   new(config: object): any

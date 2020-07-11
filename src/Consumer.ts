@@ -1,17 +1,18 @@
-import {IKafkaConfig} from "./Producer";
+
 
 export interface IConsumer {
     connect(): Promise<this>;
 
     onError(err: Error): void;
 
-    onMessage(handler: IMessageHandler): any | void
+    onMessage(handler: IMessageHandler): any | void;
 }
 
-export interface IConsumerConfig extends IKafkaConfig {
+export interface IConsumerConfig {
     GROUP_ID: string;
+    BOOTSTRAP_SERVERS: string;
 
-    toRDKafka(): object
+    toRDKafka(): object;
 }
 
 export interface IConsumerMessage {
@@ -92,20 +93,24 @@ export interface IMessageHandler {
 
 export class ConsumerConfig implements IConsumerConfig {
     GROUP_ID: string;
-    BOOTSTRAP_SERVERS_HOST: string;
-    BOOTSTRAP_SERVERS_PORT: string;
+    BOOTSTRAP_SERVERS: string
 
-    constructor(host: string, port: string, groupId: string) {
-        this.BOOTSTRAP_SERVERS_HOST = host;
-        this.BOOTSTRAP_SERVERS_PORT = port;
-        this.GROUP_ID = groupId;
+    constructor(bootstrapServers:string[] | string, groupId: string)
+    constructor(host: string, port: string, groupId: string)
+    constructor(hostOrBootstrapServers: string, portOrGroupId: string, groupId?: string) {
+        if (groupId) {
+            this.GROUP_ID = groupId;
+            this.BOOTSTRAP_SERVERS = `${hostOrBootstrapServers}:${portOrGroupId}`;
+        } else {
+            this.GROUP_ID = portOrGroupId;
+            this.BOOTSTRAP_SERVERS = Array.isArray(hostOrBootstrapServers) ? hostOrBootstrapServers.join(',') : hostOrBootstrapServers;
+        }
     }
-
     toRDKafka(): object {
         return {
-            "metadata.broker.list": this.BOOTSTRAP_SERVERS_HOST + ":" + this.BOOTSTRAP_SERVERS_PORT,
+            "bootstrap.servers": this.BOOTSTRAP_SERVERS,
             "group.id": this.GROUP_ID
-        }
+        };
     }
 }
 
